@@ -1,0 +1,16 @@
+version: "3.8"  # Specify the version of Docker Compose
+
+services:
+  metabase:
+    build:
+      context: .  # Path to the directory with your Dockerfile
+      dockerfile: Dockerfile  # Optional if named "Dockerfile"
+    ports:
+      - "3000:3000"  # Map port 3000 on the container to port 3000 on the host
+    environment:
+      - MB_EDITION=oss  # Example environment variables
+      - VERSION=latest  # Update with specific values if needed
+    # Optional: add volumes if you need to persist data
+    volumes:
+      - ./data:/app/data  # Maps a local directory to persist data in the container
+    container_name: metabase-app  # Optional: give the container a name

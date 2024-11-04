@@ -5,32 +5,34 @@
 FROM node:18-bullseye as builder
 
 ARG MB_EDITION=oss
-ARG VERSION
+ARG VERSION=1
 
 WORKDIR /home/node
 
+# Install required packages
 RUN apt-get update && apt-get upgrade -y && apt-get install openjdk-11-jdk curl git -y \
     && curl -O https://download.clojure.org/install/linux-install-1.11.1.1262.sh \
     && chmod +x linux-install-1.11.1.1262.sh \
     && ./linux-install-1.11.1.1262.sh
 
-COPY . .
+# Copy only package.json and yarn.lock to leverage Docker layer caching for dependencies
+COPY package.json yarn.lock ./
 
-# version is pulled from git, but git doesn't trust the directory due to different owners
-RUN git config --global --add safe.directory /home/node
-
-# install frontend dependencies
+# Install frontend dependencies
 RUN yarn --frozen-lockfile
 
+# Copy the rest of the project files
+COPY . .
+
+# Version is pulled from git, but git doesn't trust the directory due to different owners
+RUN git config --global --add safe.directory /home/node
+
+# Run build command
 RUN INTERACTIVE=false CI=true MB_EDITION=$MB_EDITION bin/build.sh :version ${VERSION}
 
-# ###################
-# # STAGE 2: runner
-# ###################
-
-## Remember that this runner image needs to be the same as bin/docker/Dockerfile with the exception that this one grabs the
-## jar from the previous stage rather than the local build
-## we're not yet there to provide an ARM runner till https://github.com/adoptium/adoptium/issues/96 is ready
+###################
+# STAGE 2: runner
+###################
 
 FROM --platform=linux/amd64 eclipse-temurin:11-jre-alpine as runner
 
